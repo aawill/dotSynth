@@ -1,0 +1,2 @@
+# dotSynth
+Visual synthesis interface
