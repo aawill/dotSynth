@@ -45,7 +45,7 @@ var numNotes = 0;
 var oscs = [];
 var gains = [];
 var soundOn = true;
-var chromatic = true;
+var chromatic = false;
 
 function midiToFreq(midiNote) {
     midiNote = Math.floor(midiNote);
@@ -158,6 +158,7 @@ $(document).mousedown(function(e) {
 });
 
 function mouseHandler(e) {
+    //console.log(masterComp.reduction);
     if (selectedNote < 0) return;
     if (leftButtonDown) {
         notes[selectedNote].setPosition(e.pageX, e.pageY);
