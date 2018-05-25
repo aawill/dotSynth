@@ -2,7 +2,9 @@ $(document).ready(function() {
     audioCtx = new (window.AudioContext || window.webkitAudioContext);
     audioCtx.resume();
     masterGain = audioCtx.createGain();
-    masterGain.connect(audioCtx.destination);
+    masterComp = audioCtx.createDynamicsCompressor();
+    masterGain.connect(masterComp);
+    masterComp.connect(audioCtx.destination);
     init();
     $("#newDot").click(function() {
         note = new Note();
@@ -26,6 +28,16 @@ $(document).ready(function() {
             soundOn = true;
         }
     });
+    $("#chromaticToggle").click(function() {
+        if ($(this).hasClass("active")) {
+            chromatic = false;
+            $(this).removeClass("active");
+        }
+        else {
+            chromatic = true;
+            $(this).addClass("active");
+        }
+    })
 });
 
 var notes = [];
@@ -33,12 +45,11 @@ var numNotes = 0;
 var oscs = [];
 var gains = [];
 var soundOn = true;
+var chromatic = true;
 
-function inBottomArea(note) {
-    if (canvas.height <= note.y && note.y <= canvas.height) {
-        return true;
-    }
-    else return false;
+function midiToFreq(midiNote) {
+    midiNote = Math.floor(midiNote);
+    return 27.5 * Math.pow(2, ((midiNote - 21) / 12));
 }
 
 function logScale(position, minp_, maxp_, minv_, maxv_) {
@@ -63,7 +74,12 @@ function linearScale(position, minp_, maxp_, minv_, maxv_) {
 
 function createOsc(noteIndex) {
     tempOsc = audioCtx.createOscillator();
-    tempOsc.frequency.value = logScale(notes[noteIndex].x, 0, canvas.width, 100, 2000);
+    if (chromatic) {
+        tempOsc.frequency.value = midiToFreq(linearScale(notes[noteIndex].x, 0, canvas.width, 44, 96));
+    }
+    else {
+        tempOsc.frequency.value = logScale(notes[noteIndex].x, 0, canvas.width, 100, 2000);
+    }
     tempGain = audioCtx.createGain();
     tempGain.gain.value = 0;
     tempGain.gain.linearRampToValueAtTime((1 - linearScale(notes[noteIndex].y, 0, canvas.height, 0, 0.9)), audioCtx.currentTime + 0.01);
@@ -147,7 +163,12 @@ function mouseHandler(e) {
         notes[selectedNote].setPosition(e.pageX, e.pageY);
     }
     draw();
-    oscs[selectedNote].frequency.value = logScale(notes[selectedNote].x, 0, canvas.width, 100, 2000);
+    if (chromatic) {
+        oscs[selectedNote].frequency.value = midiToFreq(linearScale(notes[selectedNote].x, 0, canvas.width, 44, 96));
+    }
+    else {
+        oscs[selectedNote].frequency.value = logScale(notes[selectedNote].x, 0, canvas.width, 100, 2000);
+    }
     gains[selectedNote].gain.linearRampToValueAtTime((1 - linearScale(notes[selectedNote].y, 0, canvas.height, 0, 0.9)), audioCtx.currentTime + 0.01);
     event.preventDefault();
 }

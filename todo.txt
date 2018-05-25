@@ -2,3 +2,4 @@
 -distortion?
 -chromaticism
 -new dot harmonics
+-delete dots
