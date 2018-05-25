@@ -1,38 +1,78 @@
 $(document).ready(function() {
     audioCtx = new (window.AudioContext || window.webkitAudioContext);
+    audioCtx.resume();
+    masterGain = audioCtx.createGain();
+    masterGain.connect(audioCtx.destination);
     init();
     $("#newDot").click(function() {
         note = new Note();
-        note.x = 40;
-        note.y = 40;
+        note.x = canvas.width / 2;
+        note.y = canvas.height / 2;
         notes[numNotes] = note;
         createOsc(numNotes);
         numNotes++;
         draw();
     });
+    $("#soundToggle").click(function() {
+        audioCtx.resume();
+        if ($(this).hasClass("active")) {
+            masterGain.gain.linearRampToValueAtTime(0, audioCtx.currentTime + 0.01);
+            $(this).removeClass("active");
+            soundOn = false;
+        }
+        else {
+            masterGain.gain.linearRampToValueAtTime(0.9, audioCtx.currentTime + 0.01);
+            $(this).addClass("active");
+            soundOn = true;
+        }
+    });
 });
 
-function logCalc(position) {
-    var minp = 0;
-    var maxp = canvas.width;
-    var minv = Math.log(100);
-    var maxv = Math.log(3000);
+var notes = [];
+var numNotes = 0;
+var oscs = [];
+var gains = [];
+var soundOn = true;
+
+function inBottomArea(note) {
+    if (canvas.height <= note.y && note.y <= canvas.height) {
+        return true;
+    }
+    else return false;
+}
+
+function logScale(position, minp_, maxp_, minv_, maxv_) {
+    var minp = minp_;
+    var maxp = maxp_;
+    var minv = Math.log(minv_);
+    var maxv = Math.log(maxv_);
 
     var scale = (maxv-minv) / (maxp-minp);
     return Math.exp(minv + scale*(position-minp));
 }    
 
+function linearScale(position, minp_, maxp_, minv_, maxv_) {
+    var minp = minp_;
+    var maxp = maxp_;
+    var minv = minv_;
+    var maxv = maxv_;
+
+    var percent = (position - minp) / (maxp-minp);
+    return percent * (maxv - minv) + minv;
+}    
+
 function createOsc(noteIndex) {
     tempOsc = audioCtx.createOscillator();
-    tempOsc.connect(audioCtx.destination);
-    tempOsc.frequency.value = logCalc(notes[noteIndex].x);
+    tempOsc.frequency.value = logScale(notes[noteIndex].x, 0, canvas.width, 100, 2000);
+    tempGain = audioCtx.createGain();
+    tempGain.gain.value = 0;
+    tempGain.gain.linearRampToValueAtTime((1 - linearScale(notes[noteIndex].y, 0, canvas.height, 0, 0.9)), audioCtx.currentTime + 0.01);
+    tempOsc.connect(tempGain);
+    tempGain.connect(masterGain);
     tempOsc.start();
     oscs[noteIndex] = tempOsc;
+    gains[noteIndex] = tempGain;
 }
-
-var notes = [];
-var numNotes = 0;
-var oscs = [];
 
 function drawCircle(ctx, x,y,r, color) {
     ctx.beginPath();
@@ -65,6 +105,7 @@ function init() {
     noteSize = Math.min(w, h) / 12;
     
     canvas.addEventListener('mousemove', mouseHandler, false);
+    canvas.addEventListener('mouseout', mouseOutHandler, false);
     
     draw();
 }
@@ -106,8 +147,17 @@ function mouseHandler(e) {
         notes[selectedNote].setPosition(e.pageX, e.pageY);
     }
     draw();
-    oscs[selectedNote].frequency.value = logCalc(notes[selectedNote].x);
+    oscs[selectedNote].frequency.value = logScale(notes[selectedNote].x, 0, canvas.width, 100, 2000);
+    gains[selectedNote].gain.linearRampToValueAtTime((1 - linearScale(notes[selectedNote].y, 0, canvas.height, 0, 0.9)), audioCtx.currentTime + 0.01);
     event.preventDefault();
+}
+
+function mouseOutHandler(e) {
+    if (leftButtonDown) {
+        gains[selectedNote].gain.linearRampToValueAtTime(0, audioCtx.currentTime + 0.01);
+    }
+    selectedNote = -1;
+    leftButtonDown = false;
 }
 
 $(document).mouseup(function(e) {
