@@ -1,0 +1,4 @@
+-colors?
+-distortion?
+-chromaticism
+-new dot harmonics

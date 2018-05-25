@@ -4,3 +4,8 @@ canvas {
     width: 100%;
     
 }
+
+.btn-create {
+    background-color: #ff5733;
+    color: white;
+}
