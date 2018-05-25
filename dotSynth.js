@@ -12,10 +12,20 @@ $(document).ready(function() {
     });
 });
 
+function logCalc(position) {
+    var minp = 0;
+    var maxp = canvas.width;
+    var minv = Math.log(100);
+    var maxv = Math.log(3000);
+
+    var scale = (maxv-minv) / (maxp-minp);
+    return Math.exp(minv + scale*(position-minp));
+}    
+
 function createOsc(noteIndex) {
     tempOsc = audioCtx.createOscillator();
     tempOsc.connect(audioCtx.destination);
-    tempOsc.frequency.value = notes[noteIndex].x;
+    tempOsc.frequency.value = logCalc(notes[noteIndex].x);
     tempOsc.start();
     oscs[noteIndex] = tempOsc;
 }
@@ -96,7 +106,7 @@ function mouseHandler(e) {
         notes[selectedNote].setPosition(e.pageX, e.pageY);
     }
     draw();
-    oscs[selectedNote].frequency.value = notes[selectedNote].x;
+    oscs[selectedNote].frequency.value = logCalc(notes[selectedNote].x);
     event.preventDefault();
 }
 
