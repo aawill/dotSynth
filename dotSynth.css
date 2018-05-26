@@ -5,7 +5,61 @@ canvas {
     
 }
 
-.btn-create {
+/*.btn-create {
     background-color: #ff5733;
     color: white;
+}*/
+
+.btn,
+.btn:hover {
+  border-color: rgba(0, 0, 0, 0.6);
+  text-shadow: 1px 1px 1px rgba(0, 0, 0, 0.3);
+}
+
+.btn-default {
+  .btn-shadow(@btn-default-bg);
+  &:hover {
+    .btn-shadow-inverse(@btn-default-bg);
+  }
+}
+
+.btn-primary {
+  .btn-shadow(@btn-primary-bg);
+  &:hover {
+    .btn-shadow-inverse(@btn-primary-bg);
+  }
+}
+
+.btn-success {
+  .btn-shadow(@btn-success-bg);
+  &:hover {
+    .btn-shadow-inverse(@btn-success-bg);
+  }
+}
+
+.btn-info {
+  .btn-shadow(@btn-info-bg);
+  &:hover {
+    .btn-shadow-inverse(@btn-info-bg);
+  }
+}
+
+.btn-warning {
+  .btn-shadow(@btn-warning-bg);
+  &:hover {
+    .btn-shadow-inverse(@btn-warning-bg);
+  }
+}
+
+.btn-danger {
+  .btn-shadow(@btn-danger-bg);
+  background-color: #ff5733;
+  &:hover {
+    .btn-shadow-inverse(@btn-danger-bg);
+  }
+}
+
+.btn-link,
+.btn-link:hover {
+  border-color: transparent;
 }

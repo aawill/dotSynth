@@ -11,18 +11,24 @@
     <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.1.0/js/bootstrap.min.js"></script>
     <script type="text/javascript" src="dotSynth.js"></script>
   </head>
-  <body>
+  <body class="bg-dark text-white">
   <canvas id="dotCanvas"></canvas>
-  <button id="newDot" class="btn btn-create">Create sound dot</button>
+  <div class="container">
+    <div class="row">
+      <div class="col-sm-4 col-md-4 col-lg-4 text-center">
+        <button id="newDot" class="btn btn-danger">Create sound dot</button> 
+      </div>
+      <div class="col-sm-4 col-md-4 col-lg-4 text-center">
+        <button id="soundToggle" class = "btn btn-primary active">Sound on/off</button>
+      </div>
+      <div class="col-sm-4 col-md-4 col-lg-4 text-center">
+        <button id="chromaticToggle" class = "btn btn-info">Chromatic on/off</button>
+      </div>
+    </div>
+  </div>
   <br/>
   <br/>
-  <button id="soundToggle" class = "btn btn-primary active">Sound on/off</button>
-  <br/>
-  <br/>
-  <button id="chromaticToggle" class = "btn btn-info">Chromatic on/off</button>  
-  <br/>
-  <br/>
-  <h4>Drag sound dots horizontally to change frequency, or vertically to change volume</h4>
+  <h4 class="text-center">Drag sound dots horizontally to change frequency, or vertically to change volume</h4>
   
   </body>
 </html>
