@@ -5,10 +5,9 @@ canvas {
     
 }
 
-/*.btn-create {
-    background-color: #ff5733;
-    color: white;
-}*/
+.btn {
+    margin: 10px;
+}
 
 .btn,
 .btn:hover {

@@ -127,6 +127,7 @@ function init() {
     
     canvas.addEventListener('mousemove', mouseHandler, false);
     canvas.addEventListener('mouseout', mouseOutHandler, false);
+    canvas.addEventListener('touchmove', touchHandler, false);
     
     draw();
 }
@@ -183,6 +184,11 @@ function mouseHandler(e) {
         oscs[selectedNote].frequency.value = logScale(notes[selectedNote].x, 0, canvas.width, 100, 2000);
     }
     gains[selectedNote].gain.linearRampToValueAtTime((1 - linearScale(notes[selectedNote].y, 0, canvas.height, 0, 0.9)), audioCtx.currentTime + 0.01);
+    
+    if (notes[selectedNote].y > canvas.height || notes[selectedNote].x < 0) {
+        deleteNote(selectedNote);
+    }
+    
     event.preventDefault();
 }
 
@@ -198,6 +204,48 @@ $(document).mouseup(function(e) {
     leftButtonDown = false;
 });
 
+$(document).bind('touchstart', function(event) {
+    leftButtonDown = true;
+    var minDistance = 100000;
+    var tempNoteID = -1;
+    var e = event.originalEvent.changedTouches[0];
+    
+    for (var i = 0; i < numNotes; i++){
+        var distance = dist(e.pageX, e.pageY, notes[i].x, notes[i].y);
+        if (minDistance >= distance){
+            minDistance = distance;
+            tempNoteID = i;
+        }
+    }
+    if (tempNoteID > -1 && minDistance < noteSize) {
+        selectedNote = tempNoteID;
+    }
+    
+});
+
+function touchHandler() {
+    if (selectedNote < 0) return;
+    
+    var e = event.targetTouches[0];
+    notes[selectedNote].setPosition(e.pageX, e.pageY);
+    draw();
+    if (chromatic) {
+        oscs[selectedNote].frequency.value = midiToFreq(linearScale(notes[selectedNote].x, 0, canvas.width, 44, 96));
+    }
+    else {
+        oscs[selectedNote].frequency.value = logScale(notes[selectedNote].x, 0, canvas.width, 100, 2000);
+    }
+    gains[selectedNote].gain.linearRampToValueAtTime((1 - linearScale(notes[selectedNote].y, 0, canvas.height, 0, 0.9)), audioCtx.currentTime + 0.01);
+    if (notes[selectedNote].y > canvas.height || notes[selectedNote].x < 0) {
+        deleteNote(selectedNote);
+    }
+    event.preventDefault();
+}
+
+$(document).bind('touchend', function(e) {
+    selectedNote = -1;
+    leftButtonDown = false;
+});
 
 
 
