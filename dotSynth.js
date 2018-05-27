@@ -37,11 +37,16 @@ $(document).ready(function() {
             chromatic = true;
             $(this).addClass("active");
         }
-    })
+    });
+    $("#deleteAll").click(function() {
+        while (numNotes > 0) {
+            deleteNote(0);
+        }
+    });
 });
 
-var notes = [];
 var numNotes = 0;
+var notes = [];
 var oscs = [];
 var gains = [];
 var soundOn = true;
@@ -90,7 +95,7 @@ function createOsc(noteIndex) {
     gains[noteIndex] = tempGain;
 }
 
-function drawCircle(ctx, x,y,r, color) {
+function drawCircle(ctx, x, y, r, color) {
     ctx.beginPath();
     ctx.fillStyle = color || '#000000';
     ctx.arc(x,y,r, 0, Math.PI * 2);
@@ -129,9 +134,19 @@ function init() {
 function draw() {
     var ctx = canvas.getContext('2d');
     ctx.clearRect(0, 0, w, h);
+
     for (var i = 0; i < numNotes; ++i) {
         drawCircle(ctx, notes[i].x, notes[i].y, noteSize, '#ff5733');
     }
+}
+
+function deleteNote(index) {
+    notes.splice(index, 1);
+    oscs.splice(index, 1);
+    gains[index].gain.linearRampToValueAtTime(0, audioCtx.currentTime + 0.01);
+    gains.splice(index, 1);
+    numNotes--;
+    draw();
 }
 
 var leftButtonDown = false;
@@ -158,11 +173,8 @@ $(document).mousedown(function(e) {
 });
 
 function mouseHandler(e) {
-    //console.log(masterComp.reduction);
     if (selectedNote < 0) return;
-    if (leftButtonDown) {
-        notes[selectedNote].setPosition(e.pageX, e.pageY);
-    }
+    notes[selectedNote].setPosition(e.pageX, e.pageY);
     draw();
     if (chromatic) {
         oscs[selectedNote].frequency.value = midiToFreq(linearScale(notes[selectedNote].x, 0, canvas.width, 44, 96));
@@ -175,9 +187,8 @@ function mouseHandler(e) {
 }
 
 function mouseOutHandler(e) {
-    if (leftButtonDown) {
-        gains[selectedNote].gain.linearRampToValueAtTime(0, audioCtx.currentTime + 0.01);
-    }
+    if (selectedNote < 0) return;
+    deleteNote(selectedNote);
     selectedNote = -1;
     leftButtonDown = false;
 }

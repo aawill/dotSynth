@@ -1,5 +1,5 @@
--colors?
 -distortion?
--chromaticism
 -new dot harmonics
--delete dots
+-y axis = filter freq instead of gain
+-information about running oscs
+-TOUCH
