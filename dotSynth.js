@@ -205,6 +205,7 @@ $(document).mouseup(function(e) {
 });
 
 $(document).bind('touchstart', function(event) {
+    event.preventDefault();
     leftButtonDown = true;
     var minDistance = 100000;
     var tempNoteID = -1;
@@ -225,7 +226,7 @@ $(document).bind('touchstart', function(event) {
 
 function touchHandler() {
     if (selectedNote < 0) return;
-    
+    event.preventDefault();
     var e = event.targetTouches[0];
     notes[selectedNote].setPosition(e.pageX, e.pageY);
     draw();
@@ -239,7 +240,7 @@ function touchHandler() {
     if (notes[selectedNote].y > canvas.height || notes[selectedNote].x < 0) {
         deleteNote(selectedNote);
     }
-    event.preventDefault();
+    
 }
 
 $(document).bind('touchend', function(e) {
