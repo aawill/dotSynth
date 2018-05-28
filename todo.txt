@@ -2,5 +2,5 @@
 -new dot harmonics
 -y axis = filter freq instead of gain
 -information about running oscs
--multiTOUCH
 -radio buttons
+-note data structure redesign - include osc and gain
