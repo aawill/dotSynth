@@ -1,12 +1,12 @@
 $(document).ready(function() {
     audioCtx = new (window.AudioContext || window.webkitAudioContext);
-    audioCtx.resume();
     masterGain = audioCtx.createGain();
     masterComp = audioCtx.createDynamicsCompressor();
     masterGain.connect(masterComp);
     masterComp.connect(audioCtx.destination);
     init();
     $("#newDot").click(function() {
+        audioCtx.resume();
         note = new Note();
         note.x = canvas.width / 2;
         note.y = canvas.height / 2;
@@ -135,7 +135,6 @@ function init() {
 function draw() {
     var ctx = canvas.getContext('2d');
     ctx.clearRect(0, 0, w, h);
-
     for (var i = 0; i < numNotes; ++i) {
         drawCircle(ctx, notes[i].x, notes[i].y, noteSize, '#ff5733');
     }
@@ -147,10 +146,10 @@ function deleteNote(index) {
     gains[index].gain.linearRampToValueAtTime(0, audioCtx.currentTime + 0.01);
     gains.splice(index, 1);
     numNotes--;
+    selectedNote = -1;
     draw();
 }
 
-var leftButtonDown = false;
 var selectedNote = -1;
 
 $(window).resize(function() {
@@ -158,7 +157,6 @@ $(window).resize(function() {
 });
 
 $(document).mousedown(function(e) {
-    leftButtonDown = true;
     var minDistance = 100000;
     var tempNoteID = -1;
     for (var i = 0; i < numNotes; i++){
@@ -185,10 +183,6 @@ function mouseHandler(e) {
     }
     gains[selectedNote].gain.linearRampToValueAtTime((1 - linearScale(notes[selectedNote].y, 0, canvas.height, 0, 0.9)), audioCtx.currentTime + 0.01);
     
-    if (notes[selectedNote].y > canvas.height || notes[selectedNote].x < 0) {
-        deleteNote(selectedNote);
-    }
-    
     event.preventDefault();
 }
 
@@ -196,17 +190,14 @@ function mouseOutHandler(e) {
     if (selectedNote < 0) return;
     deleteNote(selectedNote);
     selectedNote = -1;
-    leftButtonDown = false;
 }
 
 $(document).mouseup(function(e) {
     selectedNote = -1;
-    leftButtonDown = false;
 });
 
 $(document).bind('touchstart', function(event) {
     event.preventDefault();
-    leftButtonDown = true;
     var minDistance = 100000;
     var tempNoteID = -1;
     var e = event.originalEvent.changedTouches[0];
@@ -237,7 +228,8 @@ function touchHandler() {
         oscs[selectedNote].frequency.value = logScale(notes[selectedNote].x, 0, canvas.width, 100, 2000);
     }
     gains[selectedNote].gain.linearRampToValueAtTime((1 - linearScale(notes[selectedNote].y, 0, canvas.height, 0, 0.9)), audioCtx.currentTime + 0.01);
-    if (notes[selectedNote].y > canvas.height || notes[selectedNote].x < 0) {
+    if (notes[selectedNote].y > canvas.height || notes[selectedNote].x < 0 || 
+       notes[selectedNote].y < 0 || notes[selectedNote].x > canvas.width) {
         deleteNote(selectedNote);
     }
     
@@ -245,7 +237,6 @@ function touchHandler() {
 
 $(document).bind('touchend', function(e) {
     selectedNote = -1;
-    leftButtonDown = false;
 });
 
 
