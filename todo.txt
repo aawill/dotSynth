@@ -3,4 +3,3 @@
 -y axis = filter freq instead of gain
 -information about running oscs
 -radio buttons
--note data structure redesign - include osc and gain

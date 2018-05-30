@@ -92,6 +92,7 @@ function Note() {
     this.gainNode = audioCtx.createGain();
     this.osc.connect(this.gainNode);
     this.gainNode.connect(masterGain);
+    this.touchID = -1;
 }
 
 Note.prototype.setPosition = function(x, y) {
@@ -126,10 +127,6 @@ function draw() {
     for (var i = 0; i < numNotes; ++i) {
         drawCircle(ctx, notes[i].x, notes[i].y, noteSize, '#ff5733');
     }
-}
-
-function isOnNote(event, note) {
-    return dist(event.pageX, event.pageY, note.x, note.y) < noteSize;
 }
 
 function deleteNote(index) {
@@ -198,10 +195,13 @@ function touchStartHandler(e) {
             }
         }
         if (tempNoteID > -1 && minDistance < noteSize) {
-            selectedNotes.add(tempNoteID);
+            notes[tempNoteID].touchID = changes[i].identifier;
+            selectedNotes.add(notes[tempNoteID]);
         }
     }  
 }
+
+
 
 function touchHandler(e) {
     if (selectedNotes.size == 0) return;
@@ -209,7 +209,7 @@ function touchHandler(e) {
     var touches = e.changedTouches;
     for (var i = 0; i < touches.length; ++i) {
         for (var j = 0; j < numNotes; ++j) {
-            if (isOnNote(touches[i], notes[j])) {
+            if (notes[j].touchID == touches[i].identifier) {
                 var currentNote = notes[j];
                 currentNote.setPosition(touches[i].pageX, touches[i].pageY);
                 draw();
@@ -226,15 +226,17 @@ function touchHandler(e) {
                 }
             }
         }
-    } 
+    }
 }
 
 function touchEndHandler(e) {
     var changes = e.changedTouches;
     for (var i = 0; i < changes.length; ++i) {
         for (var j = 0; j < numNotes; ++j) {
-            if (isOnNote(changes[i], notes[j])) {
-                selectedNotes.delete(j);
+            if (notes[j].touchID == changes[i].identifier) {
+                var currentNote = notes[j];
+                currentNote.touchID = -1;
+                selectedNotes.delete(currentNote);
             }
         }
     }
