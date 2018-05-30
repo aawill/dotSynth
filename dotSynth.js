@@ -11,7 +11,7 @@ $(document).ready(function() {
         note.x = canvas.width / 2;
         note.y = canvas.height / 2;
         notes[numNotes] = note;
-        createOsc(numNotes);
+        note.osc.start();
         numNotes++;
         draw();
     });
@@ -47,8 +47,6 @@ $(document).ready(function() {
 
 var numNotes = 0;
 var notes = [];
-var oscs = [];
-var gains = [];
 var soundOn = true;
 var chromatic = false;
 var selectedNote = -1;
@@ -79,24 +77,6 @@ function linearScale(position, minp_, maxp_, minv_, maxv_) {
     return percent * (maxv - minv) + minv;
 }    
 
-function createOsc(noteIndex) {
-    tempOsc = audioCtx.createOscillator();
-    if (chromatic) {
-        tempOsc.frequency.value = midiToFreq(linearScale(notes[noteIndex].x, 0, canvas.width, 44, 96));
-    }
-    else {
-        tempOsc.frequency.value = logScale(notes[noteIndex].x, 0, canvas.width, 100, 2000);
-    }
-    tempGain = audioCtx.createGain();
-    tempGain.gain.value = 0;
-    tempGain.gain.linearRampToValueAtTime((1 - linearScale(notes[noteIndex].y, 0, canvas.height, 0, 0.9)), audioCtx.currentTime + 0.01);
-    tempOsc.connect(tempGain);
-    tempGain.connect(masterGain);
-    tempOsc.start();
-    oscs[noteIndex] = tempOsc;
-    gains[noteIndex] = tempGain;
-}
-
 function drawCircle(ctx, x, y, r, color) {
     ctx.beginPath();
     ctx.fillStyle = color || '#000000';
@@ -108,6 +88,10 @@ function Note() {
     this.x = 0;
     this.y = 0;
     this.distance = 0;
+    this.osc = audioCtx.createOscillator();
+    this.gainNode = audioCtx.createGain();
+    this.osc.connect(this.gainNode);
+    this.gainNode.connect(masterGain);
 }
 
 Note.prototype.setPosition = function(x, y) {
@@ -149,12 +133,10 @@ function isOnNote(event, note) {
 }
 
 function deleteNote(index) {
+    notes[index].gainNode.gain.linearRampToValueAtTime(0, audioCtx.currentTime + 0.01);
+    notes[index].osc.stop(audioCtx.currentTime + 0.01);
     notes.splice(index, 1);
-    oscs.splice(index, 1);
-    gains[index].gain.linearRampToValueAtTime(0, audioCtx.currentTime + 0.01);
-    gains.splice(index, 1);
     numNotes--;
-    selectedNote = -1;
     draw();
 }
 
@@ -179,16 +161,16 @@ $(document).mousedown(function(e) {
 
 function mouseHandler(e) {
     if (selectedNote < 0) return;
-    notes[selectedNote].setPosition(e.pageX, e.pageY);
+    var currentNote = notes[selectedNote];
+    currentNote.setPosition(e.pageX, e.pageY);
     draw();
     if (chromatic) {
-        oscs[selectedNote].frequency.value = midiToFreq(linearScale(notes[selectedNote].x, 0, canvas.width, 44, 96));
+        currentNote.osc.frequency.value = midiToFreq(linearScale(currentNote.x, 0, canvas.width, 44, 96));
     }
     else {
-        oscs[selectedNote].frequency.value = logScale(notes[selectedNote].x, 0, canvas.width, 100, 2000);
+        currentNote.osc.frequency.value = logScale(currentNote.x, 0, canvas.width, 100, 2000);
     }
-    gains[selectedNote].gain.linearRampToValueAtTime((1 - linearScale(notes[selectedNote].y, 0, canvas.height, 0, 0.9)), audioCtx.currentTime + 0.01);
-    
+    currentNote.gainNode.gain.linearRampToValueAtTime((1 - linearScale(notes[selectedNote].y, 0, canvas.height, 0, 0.9)), audioCtx.currentTime + 0.01);
     event.preventDefault();
 }
 
@@ -228,24 +210,23 @@ function touchHandler(e) {
     for (var i = 0; i < touches.length; ++i) {
         for (var j = 0; j < numNotes; ++j) {
             if (isOnNote(touches[i], notes[j])) {
-                notes[j].setPosition(touches[i].pageX, touches[i].pageY);
+                var currentNote = notes[j];
+                currentNote.setPosition(touches[i].pageX, touches[i].pageY);
                 draw();
                 if (chromatic) {
-                    oscs[j].frequency.value = midiToFreq(linearScale(notes[j].x, 0, canvas.width, 44, 96));
+                    currentNote.osc.frequency.value = midiToFreq(linearScale(currentNote.x, 0, canvas.width, 44, 96));
                 }
                 else {
-                    oscs[j].frequency.value = logScale(notes[j].x, 0, canvas.width, 100, 2000);
+                    currentNote.osc.frequency.value = logScale(currentNote.x, 0, canvas.width, 100, 2000);
                 }
-                gains[j].gain.linearRampToValueAtTime((1 - linearScale(notes[j].y, 0, canvas.height, 0, 0.9)), audioCtx.currentTime + 0.01);
-                if (notes[j].y > canvas.height || notes[j].x < 0 || 
-                   notes[j].y < 0 || notes[j].x > canvas.width) {
+                currentNote.gainNode.gain.linearRampToValueAtTime((1 - linearScale(currentNote.y, 0, canvas.height, 0, 0.9)), audioCtx.currentTime + 0.01);
+                if (currentNote.y > canvas.height || currentNote.x < 0 || 
+                   currentNote.y < 0 || currentNote.x > canvas.width) {
                     deleteNote(j);
                 }
             }
         }
-    }
-    
-    
+    } 
 }
 
 function touchEndHandler(e) {
@@ -257,7 +238,6 @@ function touchEndHandler(e) {
             }
         }
     }
-    selectedNote = -1;
 }
 
 
