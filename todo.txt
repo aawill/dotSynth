@@ -3,3 +3,4 @@
 -y axis = filter freq instead of gain
 -information about running oscs
 -radio buttons
+-shared collaborative app
