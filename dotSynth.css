@@ -5,8 +5,18 @@ canvas {
     
 }
 
+#speakerIcon {
+    margin-top: 20px;
+    width: 55px;
+    height: 55px;
+}
+
+#speakerIcon:hover {
+    cursor: pointer;
+}
+
 .btn {
-    margin: 10px;
+    margin-bottom: 10px;
 }
 
 .btn,

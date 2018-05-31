@@ -19,21 +19,26 @@
         <button id="newDot" class="btn btn-success">Create sound dot</button> 
       </div>
       <div class="col-sm-4 col-md-4 col-lg-4 text-center">
-        <button id="soundToggle" class = "btn btn-primary active">Sound on/off</button>
+        <div class="btn-group btn-group-toggle" data-toggle="buttons">
+          <label id="free" class="btn btn-info active">
+            <input type="radio" autocomplete="off"> Free
+          </label>
+          <label id="chromatic" class="btn btn-info">
+            <input type="radio" autocomplete="off" checked> Chromatic
+          </label>
+        </div>
+        
       </div>
       <div class="col-sm-4 col-md-4 col-lg-4 text-center">
-        <button id="chromaticToggle" class = "btn btn-info">Chromatic on/off</button>
+        <button id="deleteAll" class="btn btn-danger">Delete all dots</button> 
       </div>
     </div>
-  </div>
-  <div class="container">
     <div class="row justify-content-center">
-      <button id="deleteAll" class="btn btn-danger">Delete all dots</button>  
-    </div>  
+        <img id="speakerIcon" class="active img-fluid" src="https://i.imgur.com/oCYMca6.png">
+    </div>
   </div>
   <br/>
-  <br/>
-  <h4 class="text-center">Drag sound dots horizontally to change frequency, or vertically to change volume - Dragging off the bottom edge will delete them</h4>
+  <h5 class="text-center">Drag sound dots horizontally to change frequency, or vertically to change volume - Dragging off the canvas will delete them</h5>
   
   </body>
 </html>

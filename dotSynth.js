@@ -5,7 +5,7 @@ $(document).ready(function() {
     masterGain.connect(masterComp);
     masterComp.connect(audioCtx.destination);
     init();
-    $("#newDot").click(function() {
+    $('#newDot').click(function() {
         audioCtx.resume();
         note = new Note();
         note.x = canvas.width / 2;
@@ -15,30 +15,37 @@ $(document).ready(function() {
         numNotes++;
         draw();
     });
-    $("#soundToggle").click(function() {
-        audioCtx.resume();
-        if ($(this).hasClass("active")) {
+    $('#speakerIcon').click(function() {
+        if ($(this).hasClass('active')) {
             masterGain.gain.linearRampToValueAtTime(0, audioCtx.currentTime + 0.01);
-            $(this).removeClass("active");
-            soundOn = false;
+            $(this).attr('src', 'https://i.imgur.com/HeEZ2bf.png');
+            $(this).removeClass('active');
         }
         else {
             masterGain.gain.linearRampToValueAtTime(0.9, audioCtx.currentTime + 0.01);
-            $(this).addClass("active");
-            soundOn = true;
+            $(this).attr('src', 'https://i.imgur.com/oCYMca6.png');
+            $(this).addClass('active');
         }
     });
-    $("#chromaticToggle").click(function() {
-        if ($(this).hasClass("active")) {
+    $('#chromaticToggle').click(function() {
+        if ($(this).hasClass('active')) {
             chromatic = false;
-            $(this).removeClass("active");
+            $(this).removeClass('active');
         }
         else {
             chromatic = true;
-            $(this).addClass("active");
+            $(this).addClass('active');
         }
     });
-    $("#deleteAll").click(function() {
+    $('#chromatic').click(function() {
+        console.log('chrom');
+        chromatic = true;
+    });
+    $('#free').click(function() {
+        console.log('free');
+        chromatic = false;
+    });
+    $('#deleteAll').click(function() {
         while (numNotes > 0) {
             deleteNote(0);
         }
@@ -47,7 +54,6 @@ $(document).ready(function() {
 
 var numNotes = 0;
 var notes = [];
-var soundOn = true;
 var chromatic = false;
 var selectedNote = -1;
 var selectedNotes = new Set([]);
