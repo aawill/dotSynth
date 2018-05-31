@@ -6,7 +6,7 @@ canvas {
 }
 
 #speakerIcon {
-    margin-top: 20px;
+    margin: 20px;
     width: 55px;
     height: 55px;
 }
@@ -16,6 +16,11 @@ canvas {
 }
 
 .btn {
+    margin-bottom: 10px;
+    margin-top: 10px;
+}
+
+.btn-group {
     margin-bottom: 10px;
 }
 
