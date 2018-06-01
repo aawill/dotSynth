@@ -8,10 +8,10 @@ $(document).ready(function() {
     $('#newDot').click(function() {
         audioCtx.resume();
         note = new Note();
-        note.x = canvas.width / 2;
-        note.y = canvas.height / 2;
-        notes[numNotes] = note;
+        note.setPosition(canvas.width / 2, canvas.height / 2);
+        note.filter.frequency.value = (logScale(note.y, 0, canvas.height, 5000, 100));
         note.osc.start();
+        notes[numNotes] = note;
         numNotes++;
         draw();
     });
@@ -27,22 +27,10 @@ $(document).ready(function() {
             $(this).addClass('active');
         }
     });
-    $('#chromaticToggle').click(function() {
-        if ($(this).hasClass('active')) {
-            chromatic = false;
-            $(this).removeClass('active');
-        }
-        else {
-            chromatic = true;
-            $(this).addClass('active');
-        }
-    });
     $('#chromatic').click(function() {
-        console.log('chrom');
         chromatic = true;
     });
     $('#free').click(function() {
-        console.log('free');
         chromatic = false;
     });
     $('#deleteAll').click(function() {
@@ -93,10 +81,14 @@ function drawCircle(ctx, x, y, r, color) {
 function Note() {
     this.x = 0;
     this.y = 0;
-    this.distance = 0;
     this.osc = audioCtx.createOscillator();
+    this.filter = audioCtx.createBiquadFilter();
     this.gainNode = audioCtx.createGain();
-    this.osc.connect(this.gainNode);
+
+    this.osc.type = "sawtooth";
+    this.filter.type = "bandpass";
+    this.osc.connect(this.filter);
+    this.filter.connect(this.gainNode);
     this.gainNode.connect(masterGain);
     this.touchID = -1;
 }
@@ -135,6 +127,10 @@ function draw() {
     }
 }
 
+$(window).resize(function() {
+    init(); 
+});
+
 function deleteNote(index) {
     notes[index].gainNode.gain.linearRampToValueAtTime(0, audioCtx.currentTime + 0.01);
     notes[index].osc.stop(audioCtx.currentTime + 0.01);
@@ -142,10 +138,6 @@ function deleteNote(index) {
     numNotes--;
     draw();
 }
-
-$(window).resize(function() {
-    init(); 
-});
 
 $(document).mousedown(function(e) {
     var minDistance = 100000;
@@ -173,7 +165,8 @@ function mouseHandler(e) {
     else {
         currentNote.osc.frequency.value = logScale(currentNote.x, 0, canvas.width, 100, 2000);
     }
-    currentNote.gainNode.gain.linearRampToValueAtTime((1 - linearScale(notes[selectedNote].y, 0, canvas.height, 0, 0.9)), audioCtx.currentTime + 0.01);
+    currentNote.filter.frequency.value = (logScale(currentNote.y, 0, canvas.height, 5000, 100));
+    //currentNote.gainNode.gain.linearRampToValueAtTime((1 - linearScale(currentNote.y, 0, canvas.height, 0, 0.9)), audioCtx.currentTime + 0.01);
     event.preventDefault();
 }
 
@@ -207,8 +200,6 @@ function touchStartHandler(e) {
     }  
 }
 
-
-
 function touchHandler(e) {
     if (selectedNotes.size == 0) return;
     e.preventDefault();
@@ -225,7 +216,8 @@ function touchHandler(e) {
                 else {
                     currentNote.osc.frequency.value = logScale(currentNote.x, 0, canvas.width, 100, 2000);
                 }
-                currentNote.gainNode.gain.linearRampToValueAtTime((1 - linearScale(currentNote.y, 0, canvas.height, 0, 0.9)), audioCtx.currentTime + 0.01);
+                currentNote.filter.frequency.value = (logScale(currentNote.y, 0, canvas.height, 5000, 100));
+                //currentNote.gainNode.gain.linearRampToValueAtTime((1 - linearScale(currentNote.y, 0, canvas.height, 0, 0.9)), audioCtx.currentTime + 0.01);
                 if (currentNote.y > canvas.height || currentNote.x < 0 || 
                    currentNote.y < 0 || currentNote.x > canvas.width) {
                     deleteNote(j);

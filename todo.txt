@@ -1,6 +1,5 @@
 -distortion?
 -new dot harmonics
--y axis = filter freq instead of gain
 -information about running oscs
--radio buttons
 -shared collaborative app
+-horiz volume slider next to speaker icon
