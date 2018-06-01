@@ -85,7 +85,7 @@ function Note() {
     this.filter = audioCtx.createBiquadFilter();
     this.gainNode = audioCtx.createGain();
 
-    this.osc.type = "sawtooth";
+    this.osc.type = "triangle";
     this.filter.type = "bandpass";
     this.osc.connect(this.filter);
     this.filter.connect(this.gainNode);
