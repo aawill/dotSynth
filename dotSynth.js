@@ -165,7 +165,7 @@ function mouseHandler(e) {
     else {
         currentNote.osc.frequency.value = logScale(currentNote.x, 0, canvas.width, 100, 2000);
     }
-    currentNote.filter.frequency.value = (logScale(currentNote.y, 0, canvas.height, 5000, 100));
+    currentNote.filter.frequency.value = (logScale(currentNote.y, 0, canvas.height, 2500, 150));
     //currentNote.gainNode.gain.linearRampToValueAtTime((1 - linearScale(currentNote.y, 0, canvas.height, 0, 0.9)), audioCtx.currentTime + 0.01);
     event.preventDefault();
 }
@@ -216,7 +216,7 @@ function touchHandler(e) {
                 else {
                     currentNote.osc.frequency.value = logScale(currentNote.x, 0, canvas.width, 100, 2000);
                 }
-                currentNote.filter.frequency.value = (logScale(currentNote.y, 0, canvas.height, 5000, 100));
+                currentNote.filter.frequency.value = (logScale(currentNote.y, 0, canvas.height, 2500, 150));
                 //currentNote.gainNode.gain.linearRampToValueAtTime((1 - linearScale(currentNote.y, 0, canvas.height, 0, 0.9)), audioCtx.currentTime + 0.01);
                 if (currentNote.y > canvas.height || currentNote.x < 0 || 
                    currentNote.y < 0 || currentNote.x > canvas.width) {
