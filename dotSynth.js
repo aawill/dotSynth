@@ -1,4 +1,39 @@
+var pubnub = new PubNub({
+        subscribeKey: 'sub-c-33edfb84-6861-11e8-847f-0e36953de9e2', 
+        publishKey: 'pub-c-1faf5591-4729-4025-8ba1-cf4953039476',
+        uuid: PubNub.generateUUID()
+    });
+
+pubnub.addListener({
+    message: function(m) {
+        console.log(m.message.type);
+        /*if (m.message.type == 'new note') {
+            newNote();
+        }*/
+        switch(m.message.type) {
+            case 'new note':
+                newNote();
+                break;
+            
+            
+        }
+    },
+    presence: function(presenceEvent) {
+        console.log(presenceEvent.action) // online status events
+        console.log(presenceEvent.timestamp) // timestamp on the event is occurred
+        console.log(presenceEvent.uuid) // uuid of the user
+        console.log(presenceEvent.occupancy) // current number of users online
+    }
+});
+
+pubnub.subscribe({
+    channels: ['dotSynth'],
+    withPresence: true
+});
+
+
 $(document).ready(function() {
+    
     audioCtx = new (window.AudioContext || window.webkitAudioContext);
     masterGain = audioCtx.createGain();
     masterComp = audioCtx.createDynamicsCompressor();
@@ -6,26 +41,16 @@ $(document).ready(function() {
     masterComp.connect(audioCtx.destination);
     init();
     $('#newDot').click(function() {
-        audioCtx.resume();
-        note = new Note();
-        note.setPosition(canvas.width / 2, canvas.height / 2);
-        note.filter.frequency.value = (logScale(note.y, 0, canvas.height, 5000, 100));
-        note.osc.start();
-        notes[numNotes] = note;
-        numNotes++;
-        draw();
+        newNote();
+        /*pubnub.publish({
+            message: {
+                type: 'new note',
+            },
+            channel: 'dotSynth'
+        });*/
     });
     $('#speakerIcon').click(function() {
-        if ($(this).hasClass('active')) {
-            masterGain.gain.linearRampToValueAtTime(0, audioCtx.currentTime + 0.01);
-            $(this).attr('src', 'https://i.imgur.com/HeEZ2bf.png');
-            $(this).removeClass('active');
-        }
-        else {
-            masterGain.gain.linearRampToValueAtTime(0.9, audioCtx.currentTime + 0.01);
-            $(this).attr('src', 'https://i.imgur.com/oCYMca6.png');
-            $(this).addClass('active');
-        }
+        toggleSound();
     });
     $('#chromatic').click(function() {
         chromatic = true;
@@ -39,6 +64,31 @@ $(document).ready(function() {
         }
     });
 });
+
+function newNote() {
+    audioCtx.resume();
+        note = new Note();
+        note.setPosition(canvas.width / 2, canvas.height / 2);
+        note.filter.frequency.value = (logScale(note.y, 0, canvas.height, 5000, 100));
+        note.osc.start();
+        notes[numNotes] = note;
+        numNotes++;
+        draw();
+}
+
+function toggleSound() {
+    var sound = $('#speakerIcon');
+    if (sound.hasClass('active')) {
+            masterGain.gain.linearRampToValueAtTime(0, audioCtx.currentTime + 0.01);
+            sound.attr('src', 'https://i.imgur.com/HeEZ2bf.png');
+            sound.removeClass('active');
+    }
+    else {
+        masterGain.gain.linearRampToValueAtTime(0.9, audioCtx.currentTime + 0.01);
+        sound.attr('src', 'https://i.imgur.com/oCYMca6.png');
+        sound.addClass('active');
+    }
+}
 
 var numNotes = 0;
 var notes = [];
@@ -166,7 +216,6 @@ function mouseHandler(e) {
         currentNote.osc.frequency.value = logScale(currentNote.x, 0, canvas.width, 100, 2000);
     }
     currentNote.filter.frequency.value = (logScale(currentNote.y, 0, canvas.height, 2500, 150));
-    //currentNote.gainNode.gain.linearRampToValueAtTime((1 - linearScale(currentNote.y, 0, canvas.height, 0, 0.9)), audioCtx.currentTime + 0.01);
     event.preventDefault();
 }
 
@@ -217,7 +266,6 @@ function touchHandler(e) {
                     currentNote.osc.frequency.value = logScale(currentNote.x, 0, canvas.width, 100, 2000);
                 }
                 currentNote.filter.frequency.value = (logScale(currentNote.y, 0, canvas.height, 2500, 150));
-                //currentNote.gainNode.gain.linearRampToValueAtTime((1 - linearScale(currentNote.y, 0, canvas.height, 0, 0.9)), audioCtx.currentTime + 0.01);
                 if (currentNote.y > canvas.height || currentNote.x < 0 || 
                    currentNote.y < 0 || currentNote.x > canvas.width) {
                     deleteNote(j);

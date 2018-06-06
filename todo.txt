@@ -1,5 +1,7 @@
--distortion?
 -new dot harmonics
 -information about running oscs
 -shared collaborative app
+	-user sees and hears other users' dots, can't move them 
 -horiz volume slider next to speaker icon
+-allow control over freq range
+-clean up init()?
