@@ -7,10 +7,7 @@ var generatePerson = function(online) {
     var person = {};
 
     person.uuid = String(new Date().getTime());
-
     person.online = online || false;
-
-    person.lastSeen = Math.floor(Math.random() * 60);
 
     localStorage.setItem('dotSynthChatUser', JSON.stringify(person));
     return person;
@@ -30,7 +27,7 @@ const init = () => {
     
     ChatEngine.on('$.ready', function(data) {
         me = data.me;
-        dotSynthChat = new ChatEngine.Chat('aaron-testing-chat');
+        dotSynthChat = new ChatEngine.Chat('dotSynth-chat');
         
         dotSynthChat.on('message', (message) => {
             renderMessage(message);
@@ -44,7 +41,7 @@ const init = () => {
     });
 };
 
-function sendMessage(command, noteIndex, xVal, yVal) {
+function sendMessage(command, noteIndex, xVal, yVal, chromaVal) {
     switch(command) {
         case 'create':
             dotSynthChat.emit('message', {
@@ -57,6 +54,7 @@ function sendMessage(command, noteIndex, xVal, yVal) {
                 index: noteIndex,
                 x: xVal,
                 y: yVal,
+                chroma: chromaVal
             });
             break;
         case 'delete':
@@ -148,9 +146,21 @@ function newElseNote() {
 }
 
 // x and y must be relative values between 0 and 1
-function moveElseNote(index, x, y) {
-    elseNotes[index].setPosition(x * canvas.width,  y * canvas.height);
+function moveElseNote(index, x, y, chroma) {
+    currentNote = elseNotes[index];
+    x *= canvas.width;
+    y *= canvas.height;
+    currentNote.setPosition(x,  y);
     draw();
+    if (chroma) {
+        currentNote.osc.frequency.value = midiToFreq(linearScale(
+            currentNote.x, 0, canvas.width, 44, 96));
+    }
+    else {
+        currentNote.osc.frequency.value = logScale(currentNote.x, 0, canvas.width, 100, 2000);
+    }
+    
+    currentNote.filter.frequency.value = (logScale(currentNote.y, 0, canvas.height, 2500, 150));
 }
 
 function deleteElseNote(index) {
@@ -188,7 +198,7 @@ function midiToFreq(midiNote) {
     return 27.5 * Math.pow(2, ((midiNote - 21) / 12));
 }
 
-//scales minp_ and maxp_ to minv_ and maxv_ logarthithmically
+//scales position from minp_ and maxp_ to minv_ and maxv_ logarthithmically
 function logScale(position, minp_, maxp_, minv_, maxv_) {
     var minp = minp_;
     var maxp = maxp_;
@@ -199,7 +209,7 @@ function logScale(position, minp_, maxp_, minv_, maxv_) {
     return Math.exp(minv + scale*(position-minp));
 }    
 
-//scales minp_ and maxp_ to minv_ and maxv_ linearly
+//scales position from minp_ and maxp_ to minv_ and maxv_ linearly
 function linearScale(position, minp_, maxp_, minv_, maxv_) {
     var minp = minp_;
     var maxp = maxp_;
@@ -278,7 +288,6 @@ $(document).mousedown(function(e) {
     var minDistance = 100000;
     var tempNoteID = -1;
     for (var i = 0; i < numMyNotes; i++) {
-        //console.log
         var distance = dist(e.pageX, e.pageY, myNotes[i].x, myNotes[i].y);
         if (minDistance >= distance) {
             minDistance = distance;
@@ -298,7 +307,7 @@ function mouseHandler(e) {
     
     // sends note position as relative val between 0 and 1
     sendMessage('move', selectedNote, (currentNote.x / canvas.width), 
-                (currentNote.y / canvas.height));
+                (currentNote.y / canvas.height), chromatic);
     
     if (chromatic) {
         currentNote.osc.frequency.value = midiToFreq(linearScale(
