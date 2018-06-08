@@ -1,54 +1,103 @@
-var pubnub = new PubNub({
-        subscribeKey: 'sub-c-33edfb84-6861-11e8-847f-0e36953de9e2', 
-        publishKey: 'pub-c-1faf5591-4729-4025-8ba1-cf4953039476',
-        uuid: PubNub.generateUUID()
-    });
-
-pubnub.addListener({
-    message: function(m) {
-        console.log(m.message.type);
-        /*if (m.message.type == 'new note') {
-            newNote();
-        }*/
-        switch(m.message.type) {
-            case 'new note':
-                newNote();
-                break;
-            
-            
-        }
-    },
-    presence: function(presenceEvent) {
-        console.log(presenceEvent.action) // online status events
-        console.log(presenceEvent.timestamp) // timestamp on the event is occurred
-        console.log(presenceEvent.uuid) // uuid of the user
-        console.log(presenceEvent.occupancy) // current number of users online
+var generatePerson = function(online) {
+    var dotSynthChatUser = JSON.parse(localStorage.getItem("dotSynthChatUser"));
+    if (dotSynthChatUser) {
+        return dotSynthChatUser;
     }
+
+    var person = {};
+
+    person.uuid = String(new Date().getTime());
+
+    person.online = online || false;
+
+    person.lastSeen = Math.floor(Math.random() * 60);
+
+    localStorage.setItem('dotSynthChatUser', JSON.stringify(person));
+    return person;
+}
+
+ChatEngine = ChatEngineCore.create({
+    subscribeKey: 'sub-c-d6b86928-685a-11e8-a49b-66b3abd5adf6', 
+    publishKey: 'pub-c-23853200-9b88-458a-9b3a-89f2094e3f99' 
 });
 
-pubnub.subscribe({
-    channels: ['dotSynth'],
-    withPresence: true
-});
+let newPerson = generatePerson(true);
 
+let dotSynthChat;
+
+const init = () => {
+    ChatEngine.connect(newPerson.uuid, newPerson);
+    
+    ChatEngine.on('$.ready', function(data) {
+        me = data.me;
+        dotSynthChat = new ChatEngine.Chat('aaron-testing-chat');
+        
+        dotSynthChat.on('message', (message) => {
+            renderMessage(message);
+        });
+        
+        //$('#newDot').click(sendMessage('noteCreate'));
+        $('#newDot').click(function() {
+            sendMessage('create');
+        });
+        // why the hell does this work but the one line version doesn't??
+    });
+};
+
+function sendMessage(command, noteIndex, xVal, yVal) {
+    switch(command) {
+        case 'create':
+            dotSynthChat.emit('message', {
+                function: command
+            });
+            break;
+        case 'move':
+            dotSynthChat.emit('message', {
+                function: command,
+                index: noteIndex,
+                x: xVal,
+                y: yVal,
+            });
+            break;
+        case 'delete':
+            dotSynthChat.emit('message', {
+                function: command,
+                index: noteIndex
+            });
+    }
+};
+
+function renderMessage(m) {
+    switch(m.data.function) {
+        case 'create':
+            if (m.sender.uuid == me.uuid) {
+                newMyNote();
+            }
+            else {
+                newElseNote();
+            }
+            break;
+        case 'move':
+            if (m.sender.uuid != me.uuid) {
+                moveElseNote(m.data.index, m.data.x, m.data.y);
+            }
+            break;
+        case 'delete':
+            if (m.sender.uuid != me.uuid) {
+                deleteElseNote(m.data.index);
+            }
+            break;
+    }
+}
 
 $(document).ready(function() {
-    
+    init();
     audioCtx = new (window.AudioContext || window.webkitAudioContext);
     masterGain = audioCtx.createGain();
     masterComp = audioCtx.createDynamicsCompressor();
     masterGain.connect(masterComp);
     masterComp.connect(audioCtx.destination);
-    init();
-    $('#newDot').click(function() {
-        newNote();
-        /*pubnub.publish({
-            message: {
-                type: 'new note',
-            },
-            channel: 'dotSynth'
-        });*/
-    });
+    initCanvas();
     $('#speakerIcon').click(function() {
         toggleSound();
     });
@@ -59,21 +108,57 @@ $(document).ready(function() {
         chromatic = false;
     });
     $('#deleteAll').click(function() {
-        while (numNotes > 0) {
-            deleteNote(0);
+        while (numMyNotes > 0) {
+            deleteMyNote(0);
+            sendMessage('delete', 0);
         }
     });
 });
 
-function newNote() {
+// creating a moveable note for me
+function newMyNote() {
     audioCtx.resume();
-        note = new Note();
-        note.setPosition(canvas.width / 2, canvas.height / 2);
-        note.filter.frequency.value = (logScale(note.y, 0, canvas.height, 5000, 100));
-        note.osc.start();
-        notes[numNotes] = note;
-        numNotes++;
-        draw();
+    note = new Note();
+    note.setPosition(canvas.width / 2, canvas.height / 2);
+    note.filter.frequency.value = (logScale(note.y, 0, canvas.height, 5000, 100));
+    note.osc.start();
+    myNotes[numMyNotes] = note;
+    numMyNotes++;
+    draw();
+}
+
+function deleteMyNote(index) {
+    myNotes[index].gainNode.gain.linearRampToValueAtTime(0, audioCtx.currentTime + 0.01);
+    myNotes[index].osc.stop(audioCtx.currentTime + 0.01);
+    myNotes.splice(index, 1);
+    numMyNotes--;
+    draw();
+}
+
+// representing other users' notes
+function newElseNote() {
+    audioCtx.resume();
+    note = new Note();
+    note.setPosition(canvas.width / 2, canvas.height / 2);
+    note.filter.frequency.value = (logScale(note.y, 0, canvas.height, 5000, 100));
+    note.osc.start();
+    elseNotes[numElseNotes] = note;
+    numElseNotes++;
+    draw();
+}
+
+// x and y must be relative values between 0 and 1
+function moveElseNote(index, x, y) {
+    elseNotes[index].setPosition(x * canvas.width,  y * canvas.height);
+    draw();
+}
+
+function deleteElseNote(index) {
+    elseNotes[index].gainNode.gain.linearRampToValueAtTime(0, audioCtx.currentTime + 0.01);
+    elseNotes[index].osc.stop(audioCtx.currentTime + 0.01);
+    elseNotes.splice(index, 1);
+    numElseNotes--;
+    draw();
 }
 
 function toggleSound() {
@@ -90,8 +175,10 @@ function toggleSound() {
     }
 }
 
-var numNotes = 0;
-var notes = [];
+var numMyNotes = 0;
+var numElseNotes = 0;
+var myNotes = [];
+var elseNotes = [];
 var chromatic = false;
 var selectedNote = -1;
 var selectedNotes = new Set([]);
@@ -101,6 +188,7 @@ function midiToFreq(midiNote) {
     return 27.5 * Math.pow(2, ((midiNote - 21) / 12));
 }
 
+//scales minp_ and maxp_ to minv_ and maxv_ logarthithmically
 function logScale(position, minp_, maxp_, minv_, maxv_) {
     var minp = minp_;
     var maxp = maxp_;
@@ -111,6 +199,7 @@ function logScale(position, minp_, maxp_, minv_, maxv_) {
     return Math.exp(minv + scale*(position-minp));
 }    
 
+//scales minp_ and maxp_ to minv_ and maxv_ linearly
 function linearScale(position, minp_, maxp_, minv_, maxv_) {
     var minp = minp_;
     var maxp = maxp_;
@@ -128,6 +217,7 @@ function drawCircle(ctx, x, y, r, color) {
     ctx.fill();
 }
 
+// class declaration for Note object
 function Note() {
     this.x = 0;
     this.y = 0;
@@ -152,7 +242,7 @@ function dist(x1, y1, x2, y2) {
     return Math.sqrt(Math.pow(x1-x2, 2) + Math.pow(y1-y2, 2));
 }
 
-function init() {
+function initCanvas() {
     canvas = $('#dotCanvas')[0];
     canvas.width = window.innerWidth;
     canvas.height = window.innerHeight * 0.5;
@@ -172,28 +262,24 @@ function init() {
 function draw() {
     var ctx = canvas.getContext('2d');
     ctx.clearRect(0, 0, w, h);
-    for (var i = 0; i < numNotes; ++i) {
-        drawCircle(ctx, notes[i].x, notes[i].y, noteSize, '#ff5733');
+    for (var i = 0; i < numMyNotes; ++i) {
+        drawCircle(ctx, myNotes[i].x, myNotes[i].y, noteSize, 'rgb(255, 0, 0, 0.8)');
+    }
+    for (var j = 0; j < numElseNotes; ++j) {
+        drawCircle(ctx, elseNotes[j].x, elseNotes[j].y, noteSize, 'rgb(0, 0, 255, 0.8)')
     }
 }
 
 $(window).resize(function() {
-    init(); 
+    initCanvas(); 
 });
-
-function deleteNote(index) {
-    notes[index].gainNode.gain.linearRampToValueAtTime(0, audioCtx.currentTime + 0.01);
-    notes[index].osc.stop(audioCtx.currentTime + 0.01);
-    notes.splice(index, 1);
-    numNotes--;
-    draw();
-}
 
 $(document).mousedown(function(e) {
     var minDistance = 100000;
     var tempNoteID = -1;
-    for (var i = 0; i < numNotes; i++) {
-        var distance = dist(e.pageX, e.pageY, notes[i].x, notes[i].y);
+    for (var i = 0; i < numMyNotes; i++) {
+        //console.log
+        var distance = dist(e.pageX, e.pageY, myNotes[i].x, myNotes[i].y);
         if (minDistance >= distance) {
             minDistance = distance;
             tempNoteID = i;
@@ -206,22 +292,30 @@ $(document).mousedown(function(e) {
 
 function mouseHandler(e) {
     if (selectedNote < 0) return;
-    var currentNote = notes[selectedNote];
+    var currentNote = myNotes[selectedNote];
     currentNote.setPosition(e.pageX, e.pageY);
     draw();
+    
+    // sends note position as relative val between 0 and 1
+    sendMessage('move', selectedNote, (currentNote.x / canvas.width), 
+                (currentNote.y / canvas.height));
+    
     if (chromatic) {
-        currentNote.osc.frequency.value = midiToFreq(linearScale(currentNote.x, 0, canvas.width, 44, 96));
+        currentNote.osc.frequency.value = midiToFreq(linearScale(
+            currentNote.x, 0, canvas.width, 44, 96));
     }
     else {
         currentNote.osc.frequency.value = logScale(currentNote.x, 0, canvas.width, 100, 2000);
     }
+    
     currentNote.filter.frequency.value = (logScale(currentNote.y, 0, canvas.height, 2500, 150));
     event.preventDefault();
 }
 
 function mouseOutHandler(e) {
     if (selectedNote < 0) return;
-    deleteNote(selectedNote);
+    deleteMyNote(selectedNote);
+    sendMessage('delete', selectedNote);
     selectedNote = -1;
 }
 
@@ -235,16 +329,16 @@ function touchStartHandler(e) {
     var tempNoteID = -1;
     var changes = e.changedTouches;
     for (var i = 0; i < changes.length; ++i) {
-        for (var j = 0; j < numNotes; j++) {
-            var distance = dist(changes[i].pageX, changes[i].pageY, notes[j].x, notes[j].y);
+        for (var j = 0; j < numMyNotes; j++) {
+            var distance = dist(changes[i].pageX, changes[i].pageY, myNotes[j].x, myNotes[j].y);
             if (minDistance >= distance) {
                 minDistance = distance;
                 tempNoteID = j;
             }
         }
         if (tempNoteID > -1 && minDistance < noteSize) {
-            notes[tempNoteID].touchID = changes[i].identifier;
-            selectedNotes.add(notes[tempNoteID]);
+            myNotes[tempNoteID].touchID = changes[i].identifier;
+            selectedNotes.add(myNotes[tempNoteID]);
         }
     }  
 }
@@ -254,9 +348,9 @@ function touchHandler(e) {
     e.preventDefault();
     var touches = e.changedTouches;
     for (var i = 0; i < touches.length; ++i) {
-        for (var j = 0; j < numNotes; ++j) {
-            if (notes[j].touchID == touches[i].identifier) {
-                var currentNote = notes[j];
+        for (var j = 0; j < numMyNotes; ++j) {
+            if (myNotes[j].touchID == touches[i].identifier) {
+                var currentNote = myNotes[j];
                 currentNote.setPosition(touches[i].pageX, touches[i].pageY);
                 draw();
                 if (chromatic) {
@@ -268,7 +362,7 @@ function touchHandler(e) {
                 currentNote.filter.frequency.value = (logScale(currentNote.y, 0, canvas.height, 2500, 150));
                 if (currentNote.y > canvas.height || currentNote.x < 0 || 
                    currentNote.y < 0 || currentNote.x > canvas.width) {
-                    deleteNote(j);
+                    deleteMyNote(j);
                 }
             }
         }
@@ -278,9 +372,9 @@ function touchHandler(e) {
 function touchEndHandler(e) {
     var changes = e.changedTouches;
     for (var i = 0; i < changes.length; ++i) {
-        for (var j = 0; j < numNotes; ++j) {
-            if (notes[j].touchID == changes[i].identifier) {
-                var currentNote = notes[j];
+        for (var j = 0; j < numMyNotes; ++j) {
+            if (myNotes[j].touchID == changes[i].identifier) {
+                var currentNote = myNotes[j];
                 currentNote.touchID = -1;
                 selectedNotes.delete(currentNote);
             }
