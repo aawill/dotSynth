@@ -302,12 +302,13 @@ $(document).mousedown(function(e) {
 function mouseHandler(e) {
     if (selectedNote < 0) return;
     var currentNote = myNotes[selectedNote];
-    currentNote.setPosition(e.pageX, e.pageY);
-    draw();
     
     // sends note position as relative val between 0 and 1
-    sendMessage('move', selectedNote, (currentNote.x / canvas.width), 
-                (currentNote.y / canvas.height), chromatic);
+    sendMessage('move', selectedNote, (e.pageX / canvas.width), 
+                (e.pageY / canvas.height), chromatic);
+    
+    currentNote.setPosition(e.pageX, e.pageY);
+    draw();
     
     if (chromatic) {
         currentNote.osc.frequency.value = midiToFreq(linearScale(
@@ -360,6 +361,8 @@ function touchHandler(e) {
         for (var j = 0; j < numMyNotes; ++j) {
             if (myNotes[j].touchID == touches[i].identifier) {
                 var currentNote = myNotes[j];
+                sendMessage('move', j, (touches[i].pageX / canvas.width), 
+                            (touches[i].pageY / canvas.height), chromatic);
                 currentNote.setPosition(touches[i].pageX, touches[i].pageY);
                 draw();
                 if (chromatic) {
