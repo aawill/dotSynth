@@ -1,4 +1,5 @@
 var generatePerson = function(online) {
+    // checks for same person
     var dotSynthChatUser = JSON.parse(localStorage.getItem("dotSynthChatUser"));
     if (dotSynthChatUser) {
         return dotSynthChatUser;
@@ -22,7 +23,7 @@ let newPerson = generatePerson(true);
 
 let dotSynthChat;
 
-const init = () => {
+function init() {
     ChatEngine.connect(newPerson.uuid, newPerson);
     
     ChatEngine.on('$.ready', function(data) {
@@ -30,7 +31,7 @@ const init = () => {
         dotSynthChat = new ChatEngine.Chat('dotSynth-chat');
         
         dotSynthChat.on('message', (message) => {
-            renderMessage(message);
+            receiveMessage(message);
         });
         
         //$('#newDot').click(sendMessage('noteCreate'));
@@ -38,6 +39,13 @@ const init = () => {
             sendMessage('create');
         });
         // why the hell does this work but the one line version doesn't??
+        
+        $('#refresh').click(function() {
+            getOtherPlayers();
+        });
+        
+        // draw the canvas once potential other notes are received
+        initCanvas();
     });
 };
 
@@ -62,10 +70,26 @@ function sendMessage(command, noteIndex, xVal, yVal, chromaVal) {
                 function: command,
                 index: noteIndex
             });
+            break;
+        case 'sendNotePlease':
+            dotSynthChat.emit('message', {
+                function: command
+            });
+            break;
+        case 'receiveNote':
+            dotSynthChat.emit('message', {
+                function: command,
+                index: noteIndex,
+                x: myNotes[noteIndex].x / canvas.width,
+                y: myNotes[noteIndex].y / canvas.height,
+                oscFreq: myNotes[noteIndex].osc.frequency.value,
+                filterFreq: myNotes[noteIndex].filter.frequency.value,
+                gainNodeGain: myNotes[noteIndex].gainNode.gain.value
+            });
     }
 };
 
-function renderMessage(m) {
+function receiveMessage(m) {
     switch(m.data.function) {
         case 'create':
             if (m.sender.uuid == me.uuid) {
@@ -85,6 +109,40 @@ function renderMessage(m) {
                 deleteElseNote(m.data.index);
             }
             break;
+        case 'sendNotePlease':
+            // the user is being asked to broadcast a note
+            for (var i = 0; i < myNotes.length; ++i) {
+                sendMessage('receiveNote', i);
+            }
+            break;
+        case 'receiveNote':
+            // the user is receiving a note from another user
+            if (m.sender.uuid != me.uuid) {
+                // if the user doesn't already have this note, deep copy it
+                if (m.data.index >= elseNotes.length) {
+                    note = newElseNote();
+                    note.x = m.data.x * canvas.width;
+                    note.y = m.data.y * canvas.height;
+                    note.osc.frequency.value = m.data.oscFreq;
+                    note.filter.frequency.value = m.data.filterFreq;
+                    note.gainNode.gain.value = m.data.gainNodeGain;
+                    draw();
+                }
+            }
+            break;
+    }
+}
+
+function getOtherPlayers() {
+    if (Object.keys(dotSynthChat.users).length == 1) {
+        console.log('It\'s just you!');
+        return;
+    }
+    else {
+        sendMessage('sendNotePlease');
+    }
+    for (user in Object.values(dotSynthChat.users)) {
+        console.log(Object.values(dotSynthChat.users)[user].name);
     }
 }
 
@@ -95,7 +153,6 @@ $(document).ready(function() {
     masterComp = audioCtx.createDynamicsCompressor();
     masterGain.connect(masterComp);
     masterComp.connect(audioCtx.destination);
-    initCanvas();
     $('#speakerIcon').click(function() {
         toggleSound();
     });
@@ -111,9 +168,15 @@ $(document).ready(function() {
             sendMessage('delete', 0);
         }
     });
+    $(window).on('beforeunload', function() {
+        while (numMyNotes > 0) {
+            deleteMyNote(0);
+            sendMessage('delete', 0);
+        }
+    });
 });
 
-// creating a moveable note for me
+// creating a moveable note for Me
 function newMyNote() {
     audioCtx.resume();
     note = new Note();
@@ -123,8 +186,10 @@ function newMyNote() {
     myNotes[numMyNotes] = note;
     numMyNotes++;
     draw();
+    return note;
 }
 
+// delete one of Me's notes
 function deleteMyNote(index) {
     myNotes[index].gainNode.gain.linearRampToValueAtTime(0, audioCtx.currentTime + 0.01);
     myNotes[index].osc.stop(audioCtx.currentTime + 0.01);
@@ -143,32 +208,32 @@ function newElseNote() {
     elseNotes[numElseNotes] = note;
     numElseNotes++;
     draw();
+    return note;
 }
 
-// x and y must be relative values between 0 and 1
-function moveElseNote(index, x, y, chroma) {
-    currentNote = elseNotes[index];
-    x *= canvas.width;
-    y *= canvas.height;
-    currentNote.setPosition(x,  y);
-    draw();
-    if (chroma) {
-        currentNote.osc.frequency.value = midiToFreq(linearScale(
-            currentNote.x, 0, canvas.width, 44, 96));
-    }
-    else {
-        currentNote.osc.frequency.value = logScale(currentNote.x, 0, canvas.width, 100, 2000);
-    }
-    
-    currentNote.filter.frequency.value = (logScale(currentNote.y, 0, canvas.height, 2500, 150));
-}
-
+// deleting other users' notes
 function deleteElseNote(index) {
     elseNotes[index].gainNode.gain.linearRampToValueAtTime(0, audioCtx.currentTime + 0.01);
     elseNotes[index].osc.stop(audioCtx.currentTime + 0.01);
     elseNotes.splice(index, 1);
     numElseNotes--;
     draw();
+}
+
+// Moving other users' notes. x and y must be relative values between 0 and 1
+function moveElseNote(index, x, y, chroma) {
+    currentNote = elseNotes[index];
+    x *= canvas.width;
+    y *= canvas.height;
+    currentNote.setPosition(x,  y);
+    draw();
+    if (chroma) currentNote.osc.frequency.value = 
+        midiToFreq(linearScale(currentNote.x, 0, canvas.width, 44, 96));
+    else currentNote.osc.frequency.value = 
+        logScale(currentNote.x, 0, canvas.width, 100, 2000);
+    
+    currentNote.filter.frequency.value = 
+        (logScale(currentNote.y, 0, canvas.height, 2500, 150));
 }
 
 function toggleSound() {
@@ -272,11 +337,11 @@ function initCanvas() {
 function draw() {
     var ctx = canvas.getContext('2d');
     ctx.clearRect(0, 0, w, h);
-    for (var i = 0; i < numMyNotes; ++i) {
-        drawCircle(ctx, myNotes[i].x, myNotes[i].y, noteSize, 'rgb(255, 0, 0, 0.8)');
+    for (var i = 0; i < myNotes.length; ++i) {
+        drawCircle(ctx, myNotes[i].x, myNotes[i].y, noteSize, 'rgba(255, 0, 0, 0.8)');
     }
-    for (var j = 0; j < numElseNotes; ++j) {
-        drawCircle(ctx, elseNotes[j].x, elseNotes[j].y, noteSize, 'rgb(0, 0, 255, 0.8)')
+    for (var j = 0; j < elseNotes.length; ++j) {
+        drawCircle(ctx, elseNotes[j].x, elseNotes[j].y, noteSize, 'rgba(0, 0, 255, 0.8)')
     }
 }
 
@@ -375,6 +440,7 @@ function touchHandler(e) {
                 if (currentNote.y > canvas.height || currentNote.x < 0 || 
                    currentNote.y < 0 || currentNote.x > canvas.width) {
                     deleteMyNote(j);
+                    sendMessage('delete', j);
                 }
             }
         }

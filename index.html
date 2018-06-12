@@ -2,43 +2,49 @@
 <html>
   <head>
     <title>dotSynth</title>
-    <meta charset="utf-8"> 
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.1.0/css/bootstrap.min.css">
-    <link rel="stylesheet" type="text/css" href="dotSynth.css">
-    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.0/umd/popper.min.js"></script>
-    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.1.0/js/bootstrap.min.js"></script>
-    <script src="https://cdn.pubnub.com/sdk/javascript/pubnub.4.20.3.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chat-engine@0.9.5/dist/chat-engine.min.js"></script>
-    <script type="text/javascript" src="dotSynth.js"></script>
+    <meta charset='utf-8'> 
+    <meta name='viewport' content='width=device-width, initial-scale=1'>
+    <link rel='stylesheet' href='https://maxcdn.bootstrapcdn.com/bootstrap/4.1.0/css/bootstrap.min.css'>
+    <link rel='stylesheet' type='text/css' href='dotSynth.css'>
+    <script src='https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js'></script>
+    <script src='https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.0/umd/popper.min.js'></script>
+    <script src='https://maxcdn.bootstrapcdn.com/bootstrap/4.1.0/js/bootstrap.min.js'></script>
+    <script src='https://cdn.pubnub.com/sdk/javascript/pubnub.4.20.3.min.js'></script>
+    <script src='https://cdn.jsdelivr.net/npm/chat-engine@0.9.5/dist/chat-engine.min.js'></script>
+    <script defer src="https://use.fontawesome.com/releases/v5.0.13/js/all.js" integrity="sha384-xymdQtn1n3lH2wcu0qhcdaOpQwyoarkgLVxC/wZ5q7h9gHtxICrpcaSUfygqZGOe" crossorigin="anonymous"></script>
+    <script type='text/javascript' src='dotSynth.js'></script>
   </head>
-  <body class="bg-dark text-white">
-  <canvas id="dotCanvas"></canvas>
-  <div class="container">
-    <div class="row">
-      <div class="col-sm-4 col-md-4 col-lg-4 text-center">
-        <button id="newDot" class="btn btn-success">Create sound dot</button> 
+  <body class='bg-dark text-white'>
+  <canvas id='dotCanvas'></canvas>
+  <div class='row justify-content-center'>
+    <a id='refresh' class='btn btn-primary'>
+      <i class='fas fa-sync-alt'></i> Check for other players!
+    </a>
+  </div>
+  <div class='container'>
+    <div class='row'>
+      <div class='col-sm-4 col-md-4 col-lg-4 text-center'>
+        <button id='newDot' class='btn btn-success'>Create sound dot</button> 
       </div>
-      <div class="col-sm-4 col-md-4 col-lg-4 text-center">
-        <div class="btn-group btn-group-toggle" data-toggle="buttons">
-          <label id="free" class="btn btn-info active">
-            <input type="radio" autocomplete="off"> Free
+      <div class='col-sm-4 col-md-4 col-lg-4 text-center'>
+        <div class='btn-group btn-group-toggle' data-toggle='buttons'>
+          <label id='free' class='btn btn-info active'>
+            <input type='radio' autocomplete='off'> Free
           </label>
-          <label id="chromatic" class="btn btn-info">
-            <input type="radio" autocomplete="off" checked> Chromatic
+          <label id='chromatic' class='btn btn-info'>
+            <input type='radio' autocomplete='off' checked> Chromatic
           </label>
         </div>
       </div>
-      <div class="col-sm-4 col-md-4 col-lg-4 text-center">
-        <button id="deleteAll" class="btn btn-danger">Delete all dots</button> 
+      <div class='col-sm-4 col-md-4 col-lg-4 text-center'>
+        <button id='deleteAll' class='btn btn-danger'>Delete all dots</button> 
       </div>
     </div>
-    <div class="row justify-content-center">
-        <img id="speakerIcon" class="active img-fluid" src="https://i.imgur.com/oCYMca6.png">
+    <div class='row justify-content-center'>
+        <img id='speakerIcon' class='active img-fluid' src='https://i.imgur.com/oCYMca6.png'>
     </div>
   </div>
-  <h5 class="text-center">CURRENTLY IN 2 PLAYER TESTING MODE<!--Drag sound dots horizontally to change pitch, or vertically to 
+  <h5 class='text-center'>CURRENTLY IN 2 PLAYER TESTING MODE<!--Drag sound dots horizontally to change pitch, or vertically to 
     change tone - Dragging off the canvas will delete them--></h5>
   </body>
 </html>
