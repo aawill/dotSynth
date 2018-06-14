@@ -1,3 +1,5 @@
+var spectating = false;
+
 var generatePerson = function(online) {
     // checks for same person
     var dotSynthChatUser = JSON.parse(localStorage.getItem("dotSynthChatUser"));
@@ -19,9 +21,9 @@ ChatEngine = ChatEngineCore.create({
     publishKey: 'pub-c-23853200-9b88-458a-9b3a-89f2094e3f99' 
 });
 
-let newPerson = generatePerson(true);
+var newPerson = generatePerson(true);
 
-let dotSynthChat;
+var dotSynthChat;
 
 function init() {
     ChatEngine.connect(newPerson.uuid, newPerson);
@@ -34,26 +36,74 @@ function init() {
             receiveMessage(message);
         });
         
-        //$('#newDot').click(sendMessage('noteCreate'));
         $('#newDot').click(function() {
-            sendMessage('create');
+            if (!spectating) sendMessage('create', numMyNotes);
         });
-        // why the hell does this work but the one line version doesn't??
         
         $('#refresh').click(function() {
+            var activeUsers = 0;
+            for (user in Object.keys(dotSynthChat.users)) {
+                if (!Object.values(dotSynthChat.users)[user].state.spectating) activeUsers++;
+            }
+            
+            if (activeUsers > 2) {
+                spectating = true;
+                console.log('spectating');
+                me.update({spectating: true});
+                alert('Two players already present - spectating');
+            }
+            else if (!(activeUsers == 2 && spectating)) {
+                spectating = false;
+                me.update({spectating: false});
+                alert('Player(s) left - No longer spectating!');
+            }
             getOtherPlayers();
         });
-        
+        me.update({spectating: false});
         // draw the canvas once potential other notes are received
         initCanvas();
     });
 };
 
+$(document).ready(function() {
+    init();
+    
+    audioCtx = new (window.AudioContext || window.webkitAudioContext);
+    masterGain = audioCtx.createGain();
+    masterComp = audioCtx.createDynamicsCompressor();
+    masterGain.connect(masterComp);
+    masterComp.connect(audioCtx.destination);
+    $('#speakerIcon').click(function() {
+        toggleSound();
+    });
+    if (!spectating) {
+        $('#chromatic').click(function() {
+            chromatic = true;
+        });
+        $('#free').click(function() {
+            chromatic = false;
+        });
+        $('#deleteAll').click(function() {
+            while (numMyNotes > 0) {
+                deleteMyNote(0);
+                sendMessage('delete', 0);
+            }
+        });
+    }
+    $(window).on('beforeunload', function() {
+        while (numMyNotes > 0) {
+            deleteMyNote(0);
+            sendMessage('delete', 0);
+        }
+    });
+});
+
 function sendMessage(command, noteIndex, xVal, yVal, chromaVal) {
     switch(command) {
         case 'create':
             dotSynthChat.emit('message', {
-                function: command
+                function: command,
+                index: noteIndex
             });
             break;
         case 'move':
@@ -71,7 +121,7 @@ function sendMessage(command, noteIndex, xVal, yVal, chromaVal) {
                 index: noteIndex
             });
             break;
-        case 'sendNotePlease':
+        case 'sendNotesPlease':
             dotSynthChat.emit('message', {
                 function: command
             });
@@ -96,7 +146,7 @@ function receiveMessage(m) {
                 newMyNote();
             }
             else {
-                newElseNote();
+                newElseNote(m.data.index);
             }
             break;
         case 'move':
@@ -109,7 +159,7 @@ function receiveMessage(m) {
                 deleteElseNote(m.data.index);
             }
             break;
-        case 'sendNotePlease':
+        case 'sendNotesPlease':
             // the user is being asked to broadcast a note
             for (var i = 0; i < myNotes.length; ++i) {
                 sendMessage('receiveNote', i);
@@ -118,16 +168,14 @@ function receiveMessage(m) {
         case 'receiveNote':
             // the user is receiving a note from another user
             if (m.sender.uuid != me.uuid) {
-                // if the user doesn't already have this note, deep copy it
-                if (m.data.index >= elseNotes.length) {
-                    note = newElseNote();
-                    note.x = m.data.x * canvas.width;
-                    note.y = m.data.y * canvas.height;
-                    note.osc.frequency.value = m.data.oscFreq;
-                    note.filter.frequency.value = m.data.filterFreq;
-                    note.gainNode.gain.value = m.data.gainNodeGain;
-                    draw();
-                }
+                // deep copy the note into the correct index of elseNotes
+                note = newElseNote(m.data.index);
+                note.x = m.data.x * canvas.width;
+                note.y = m.data.y * canvas.height;
+                note.osc.frequency.value = m.data.oscFreq;
+                note.filter.frequency.value = m.data.filterFreq;
+                note.gainNode.gain.value = m.data.gainNodeGain;
+                draw();
             }
             break;
     }
@@ -139,42 +187,12 @@ function getOtherPlayers() {
         return;
     }
     else {
-        sendMessage('sendNotePlease');
+        sendMessage('sendNotesPlease');
     }
     for (user in Object.values(dotSynthChat.users)) {
         console.log(Object.values(dotSynthChat.users)[user].name);
     }
 }
-
-$(document).ready(function() {
-    init();
-    audioCtx = new (window.AudioContext || window.webkitAudioContext);
-    masterGain = audioCtx.createGain();
-    masterComp = audioCtx.createDynamicsCompressor();
-    masterGain.connect(masterComp);
-    masterComp.connect(audioCtx.destination);
-    $('#speakerIcon').click(function() {
-        toggleSound();
-    });
-    $('#chromatic').click(function() {
-        chromatic = true;
-    });
-    $('#free').click(function() {
-        chromatic = false;
-    });
-    $('#deleteAll').click(function() {
-        while (numMyNotes > 0) {
-            deleteMyNote(0);
-            sendMessage('delete', 0);
-        }
-    });
-    $(window).on('beforeunload', function() {
-        while (numMyNotes > 0) {
-            deleteMyNote(0);
-            sendMessage('delete', 0);
-        }
-    });
-});
 
 // creating a moveable note for Me
 function newMyNote() {
@@ -199,13 +217,13 @@ function deleteMyNote(index) {
 }
 
 // representing other users' notes
-function newElseNote() {
+function newElseNote(index) {
     audioCtx.resume();
     note = new Note();
     note.setPosition(canvas.width / 2, canvas.height / 2);
     note.filter.frequency.value = (logScale(note.y, 0, canvas.height, 5000, 100));
     note.osc.start();
-    elseNotes[numElseNotes] = note;
+    elseNotes[index] = note;
     numElseNotes++;
     draw();
     return note;
@@ -341,7 +359,9 @@ function draw() {
         drawCircle(ctx, myNotes[i].x, myNotes[i].y, noteSize, 'rgba(255, 0, 0, 0.8)');
     }
     for (var j = 0; j < elseNotes.length; ++j) {
-        drawCircle(ctx, elseNotes[j].x, elseNotes[j].y, noteSize, 'rgba(0, 0, 255, 0.8)')
+        if (elseNotes[j]) {
+            drawCircle(ctx, elseNotes[j].x, elseNotes[j].y, noteSize, 'rgba(0, 0, 255, 0.8)')
+        }
     }
 }
 
@@ -369,8 +389,8 @@ function mouseHandler(e) {
     var currentNote = myNotes[selectedNote];
     
     // sends note position as relative val between 0 and 1
-    sendMessage('move', selectedNote, (e.pageX / canvas.width), 
-                (e.pageY / canvas.height), chromatic);
+    sendMessage('move', selectedNote, (e.pageX / canvas.width).toPrecision(5), 
+                (e.pageY / canvas.height).toPrecision(5), chromatic);
     
     currentNote.setPosition(e.pageX, e.pageY);
     draw();
@@ -426,8 +446,8 @@ function touchHandler(e) {
         for (var j = 0; j < numMyNotes; ++j) {
             if (myNotes[j].touchID == touches[i].identifier) {
                 var currentNote = myNotes[j];
-                sendMessage('move', j, (touches[i].pageX / canvas.width), 
-                            (touches[i].pageY / canvas.height), chromatic);
+                sendMessage('move', j, (touches[i].pageX / canvas.width).toPrecision(5), 
+                            (touches[i].pageY / canvas.height).toPrecision(5), chromatic);
                 currentNote.setPosition(touches[i].pageX, touches[i].pageY);
                 draw();
                 if (chromatic) {

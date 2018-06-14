@@ -2,6 +2,9 @@
 -information about running oscs
 -shared collaborative app
 	-user sees and hears other users' dots, can't move them 
+	-truncate position values at 4 decimal places
 -horiz volume slider next to speaker icon
 -allow control over freq range
+	-zooming in and out to change pitch range
+		-color gradient on canvas 
 -clean up initCanvas()?
