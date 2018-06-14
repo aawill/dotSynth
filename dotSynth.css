@@ -1,3 +1,34 @@
+#overlay {
+    position: fixed;
+    width: 100%;
+    height: 100%;
+    display: block;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(0, 0, 0, 0.6);
+    z-index: 2;
+}
+
+#overlayText {
+    position: absolute;
+    text-align: center;
+    width: 100%;
+    
+    top: 45%;
+    left: 50%;
+    font-size: 40px;
+    transform: translate(-50%,-50%);
+    -ms-transform: translate(-50%,-50%);
+    font-family: Helvetica
+}
+
+#refresh {
+    position: relative;
+    z-index: 3;
+}
+
 canvas { 
     border: 1px solid black; 
     background-color: aquamarine;
@@ -35,6 +66,7 @@ canvas {
   &:hover {
     .btn-shadow-inverse(@btn-default-bg);
   }
+  
 }
 
 .btn-primary {

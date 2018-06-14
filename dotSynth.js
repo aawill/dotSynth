@@ -41,6 +41,8 @@ function init() {
         });
         
         $('#refresh').click(function() {
+            //$('#overlay').css('display', 'none');
+            
             var activeUsers = 0;
             for (user in Object.keys(dotSynthChat.users)) {
                 if (!Object.values(dotSynthChat.users)[user].state.spectating) activeUsers++;
@@ -50,12 +52,26 @@ function init() {
                 spectating = true;
                 console.log('spectating');
                 me.update({spectating: true});
-                alert('Two players already present - spectating');
+                $('#overlayText').css('font-size', '30px');
+                $('#overlayText').text('Two players present - spectating');
+                $('#overlay').delay(2000).fadeOut(1500);
+                disableButtons();
             }
-            else if (!(activeUsers == 2 && spectating)) {
+            else if (activeUsers < 2 && spectating) {
                 spectating = false;
                 me.update({spectating: false});
-                alert('Player(s) left - No longer spectating!');
+                $('#overlayText').css('font-size', '30px');
+                $('#overlayText').text('Player(s) left, no longer spectating!');
+                $('#overlay').fadeIn(500).delay(1500).fadeOut(1000);
+                enableButtons();
+            }
+            else if (spectating) {
+                $('#overlayText').css('font-size', '30px');
+                $('#overlayText').text('Still spectating');
+                $('#overlay').fadeIn(500).delay(1500).fadeOut(1000);
+            }
+            else {
+                $('#overlay').fadeOut(500);
             }
             getOtherPlayers();
         });
@@ -65,9 +81,25 @@ function init() {
     });
 };
 
+function disableButtons() {
+    $('#newDot').attr('disabled', 'true');
+    $('#deleteAll').attr('disabled', 'true');
+    if ($('#free').hasClass('active')) $('#free').removeClass('active');
+    if ($('#chromatic').hasClass('active')) $('#chromatic').removeClass('active');
+    $('#chromSwitch').attr('disabled', 'true');
+}
+
+function enableButtons() {
+    $('#newDot').removeAttr('disabled');
+    $('#chromatic').removeAttr('disabled');
+    $('#free').removeAttr('disabled');
+    $('#deleteAll').removeAttr('disabled');
+    $('#chromSwitch').removeAttr('disabled');
+    $('#free').addClass('active');
+}
+
 $(document).ready(function() {
     init();
-    
     audioCtx = new (window.AudioContext || window.webkitAudioContext);
     masterGain = audioCtx.createGain();
     masterComp = audioCtx.createDynamicsCompressor();
@@ -97,6 +129,20 @@ $(document).ready(function() {
         }
     });
 });
+
+function toggleSound() {
+    var sound = $('#speakerIcon');
+    if (sound.hasClass('active')) {
+            masterGain.gain.linearRampToValueAtTime(0, audioCtx.currentTime + 0.01);
+            sound.attr('src', 'https://i.imgur.com/HeEZ2bf.png');
+            sound.removeClass('active');
+    }
+    else {
+        masterGain.gain.linearRampToValueAtTime(0.9, audioCtx.currentTime + 0.01);
+        sound.attr('src', 'https://i.imgur.com/oCYMca6.png');
+        sound.addClass('active');
+    }
+}
 
 function sendMessage(command, noteIndex, xVal, yVal, chromaVal) {
     switch(command) {
@@ -181,6 +227,14 @@ function receiveMessage(m) {
     }
 }
 
+var numMyNotes = 0;
+var numElseNotes = 0;
+var myNotes = [];
+var elseNotes = [];
+var chromatic = false;
+var selectedNote = -1;
+var selectedNotes = new Set([]);
+
 function getOtherPlayers() {
     if (Object.keys(dotSynthChat.users).length == 1) {
         console.log('It\'s just you!');
@@ -253,28 +307,6 @@ function moveElseNote(index, x, y, chroma) {
     currentNote.filter.frequency.value = 
         (logScale(currentNote.y, 0, canvas.height, 2500, 150));
 }
-
-function toggleSound() {
-    var sound = $('#speakerIcon');
-    if (sound.hasClass('active')) {
-            masterGain.gain.linearRampToValueAtTime(0, audioCtx.currentTime + 0.01);
-            sound.attr('src', 'https://i.imgur.com/HeEZ2bf.png');
-            sound.removeClass('active');
-    }
-    else {
-        masterGain.gain.linearRampToValueAtTime(0.9, audioCtx.currentTime + 0.01);
-        sound.attr('src', 'https://i.imgur.com/oCYMca6.png');
-        sound.addClass('active');
-    }
-}
-
-var numMyNotes = 0;
-var numElseNotes = 0;
-var myNotes = [];
-var elseNotes = [];
-var chromatic = false;
-var selectedNote = -1;
-var selectedNotes = new Set([]);
 
 function midiToFreq(midiNote) {
     midiNote = Math.floor(midiNote);

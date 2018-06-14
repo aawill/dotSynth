@@ -15,6 +15,9 @@
     <script type='text/javascript' src='dotSynth.js'></script>
   </head>
   <body class='bg-dark text-white'>
+  <div id="overlay">
+    <div id="overlayText">Click this first!</div>  
+  </div>
   <canvas id='dotCanvas'></canvas>
   <div class='row justify-content-center'>
     <a id='refresh' class='btn btn-primary'>
@@ -27,7 +30,7 @@
         <button id='newDot' class='btn btn-success'>Create sound dot</button> 
       </div>
       <div class='col-sm-4 col-md-4 col-lg-4 text-center'>
-        <div class='btn-group btn-group-toggle' data-toggle='buttons'>
+        <div id="chromSwitch" class='btn-group btn-group-toggle' data-toggle='buttons'>
           <label id='free' class='btn btn-info active'>
             <input type='radio' autocomplete='off'> Free
           </label>
@@ -44,7 +47,7 @@
         <img id='speakerIcon' class='active img-fluid' src='https://i.imgur.com/oCYMca6.png'>
     </div>
   </div>
-  <h5 class='text-center'>Currently in 2 player testing mode: click the 'Check for another player' button before beginning</h5>
+  <h5 class='text-center'>Currently in 2 player testing mode</h5>
   <br/>
   <h5 class='text-center'>Drag sound dots horizontally to change pitch, or vertically to 
   change tone - Dragging off the canvas will delete them</h5>
