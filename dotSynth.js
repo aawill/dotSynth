@@ -26,6 +26,7 @@ var newPerson = generatePerson(true);
 var dotSynthChat;
 
 function init() {
+    initCanvas();
     ChatEngine.connect(newPerson.uuid, newPerson);
     
     ChatEngine.on('$.ready', function(data) {
@@ -41,43 +42,15 @@ function init() {
         });
         
         $('#refresh').click(function() {
-            //$('#overlay').css('display', 'none');
-            
-            var activeUsers = 0;
-            for (user in Object.keys(dotSynthChat.users)) {
-                if (!Object.values(dotSynthChat.users)[user].state.spectating) activeUsers++;
-            }
-            
-            if (activeUsers > 2) {
-                spectating = true;
-                console.log('spectating');
-                me.update({spectating: true});
-                $('#overlayText').css('font-size', '30px');
-                $('#overlayText').text('Two players present - spectating');
-                $('#overlay').delay(2000).fadeOut(1500);
-                disableButtons();
-            }
-            else if (activeUsers < 2 && spectating) {
-                spectating = false;
-                me.update({spectating: false});
-                $('#overlayText').css('font-size', '30px');
-                $('#overlayText').text('Player(s) left, no longer spectating!');
-                $('#overlay').fadeIn(500).delay(1500).fadeOut(1000);
-                enableButtons();
-            }
-            else if (spectating) {
-                $('#overlayText').css('font-size', '30px');
-                $('#overlayText').text('Still spectating');
-                $('#overlay').fadeIn(500).delay(1500).fadeOut(1000);
-            }
-            else {
-                $('#overlay').fadeOut(500);
-            }
             getOtherPlayers();
         });
-        me.update({spectating: false});
+        dotSynthChat.on('$.offline.leave', (data) => {
+            if (!data.user.state.spectating) {
+                while (elseNotes.length) deleteElseNote(0);
+            }
+        });
         // draw the canvas once potential other notes are received
-        initCanvas();
+        draw();
     });
 };
 
@@ -122,12 +95,6 @@ $(document).ready(function() {
             }
         });
     }
-    $(window).on('beforeunload', function() {
-        while (numMyNotes > 0) {
-            deleteMyNote(0);
-            sendMessage('delete', 0);
-        }
-    });
 });
 
 function toggleSound() {
@@ -236,15 +203,46 @@ var selectedNote = -1;
 var selectedNotes = new Set([]);
 
 function getOtherPlayers() {
-    if (Object.keys(dotSynthChat.users).length == 1) {
-        console.log('It\'s just you!');
-        return;
+    var activeUsers = 0;
+            
+    // counts number of non-spectating users
+    for (user in Object.keys(dotSynthChat.users)) {
+        if (!Object.values(dotSynthChat.users)[user].state.spectating) activeUsers++;
     }
+
+    // if user is late to the game
+    if (activeUsers > 2) {
+        spectating = true;
+        console.log('spectating');
+        me.update({spectating: true});
+        $('#overlayText').css('font-size', '30px');
+        $('#overlayText').text('Two players present - spectating');
+        $('#overlay').delay(2000).fadeOut(1500);
+        disableButtons();
+    }
+    // if user's turn has arrived
+    else if (activeUsers < 2 && spectating) {
+        spectating = false;
+        me.update({spectating: false});
+        $('#overlayText').css('font-size', '30px');
+        $('#overlayText').text('Player(s) left, no longer spectating!');
+        $('#overlay').fadeIn(500).delay(1500).fadeOut(1000);
+        enableButtons();
+    }
+    // still spectating
+    else if (spectating) {
+        $('#overlayText').css('font-size', '30px');
+        $('#overlayText').text('Still spectating');
+        $('#overlay').fadeIn(500).delay(1500).fadeOut(1000);
+    }
+    // 1 or 2 players present
     else {
-        sendMessage('sendNotesPlease');
+        if (activeUsers == 1) $('#overlayText').text('It\'s just you!');
+        else $('#overlayText').text('There\'s another player!');
+        $('#overlay').delay(1200).fadeOut(1000);
     }
-    for (user in Object.values(dotSynthChat.users)) {
-        console.log(Object.values(dotSynthChat.users)[user].name);
+    if (Object.keys(dotSynthChat.users).length > 1) {
+        sendMessage('sendNotesPlease');
     }
 }
 
@@ -392,7 +390,7 @@ function draw() {
     }
     for (var j = 0; j < elseNotes.length; ++j) {
         if (elseNotes[j]) {
-            drawCircle(ctx, elseNotes[j].x, elseNotes[j].y, noteSize, 'rgba(0, 0, 255, 0.8)')
+            drawCircle(ctx, Math.floor(elseNotes[j].x), Math.floor(elseNotes[j].y), noteSize, 'rgba(0, 0, 255, 0.8)')
         }
     }
 }
