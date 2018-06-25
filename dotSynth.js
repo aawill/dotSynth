@@ -17,8 +17,9 @@ var generatePerson = function(online) {
 }
 
 ChatEngine = ChatEngineCore.create({
-    subscribeKey: 'sub-c-d6b86928-685a-11e8-a49b-66b3abd5adf6', 
-    publishKey: 'pub-c-23853200-9b88-458a-9b3a-89f2094e3f99' 
+    // demo keys from chatengine tutorial
+    subscribeKey: 'sub-c-e08856de-c90e-11e7-96a3-6a84acea123e', 
+    publishKey: 'pub-c-5f66e0a7-e375-446d-b573-26939e3c6df8' 
 });
 
 var newPerson = generatePerson(true);
