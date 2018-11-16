@@ -16,11 +16,11 @@ var generatePerson = function(online) {
     return person;
 }
 
-ChatEngine = ChatEngineCore.create({
+/*ChatEngine = ChatEngineCore.create({
     // demo keys from chatengine tutorial
-    subscribeKey: 'sub-c-e08856de-c90e-11e7-96a3-6a84acea123e', 
-    publishKey: 'pub-c-5f66e0a7-e375-446d-b573-26939e3c6df8' 
-});
+  subscribeKey: 'sub-c-c73637e4-646f-11e8-8fc9-4adc6d6a94eb', 
+  publishKey: 'pub-c-dac60c5d-a890-45b6-a23a-1a7bf98785b2' 
+});*/
 
 var newPerson = generatePerson(true);
 
@@ -28,9 +28,9 @@ var dotSynthChat;
 
 function init() {
     initCanvas();
-    ChatEngine.connect(newPerson.uuid, newPerson);
+    //ChatEngine.connect(newPerson.uuid, newPerson);
     
-    ChatEngine.on('$.ready', function(data) {
+    /*ChatEngine.on('$.ready', function(data) {
         me = data.me;
         dotSynthChat = new ChatEngine.Chat('dotSynth-chat');
         
@@ -52,7 +52,8 @@ function init() {
         });
         // draw the canvas once potential other notes are received
         draw();
-    });
+    });*/
+  draw();
 };
 
 function disableButtons() {
@@ -92,10 +93,13 @@ $(document).ready(function() {
         $('#deleteAll').click(function() {
             while (numMyNotes > 0) {
                 deleteMyNote(0);
-                sendMessage('delete', 0);
+                //sendMessage('delete', 0);
             }
         });
     }
+  $('#newDot').click(function() {
+    newMyNote();
+  });
 });
 
 function toggleSound() {
@@ -205,7 +209,7 @@ var selectedNotes = new Set([]);
 
 function getOtherPlayers() {
     var activeUsers = 0;
-            
+    
     // counts number of non-spectating users
     for (user in Object.keys(dotSynthChat.users)) {
         if (!Object.values(dotSynthChat.users)[user].state.spectating) activeUsers++;
@@ -420,8 +424,8 @@ function mouseHandler(e) {
     var currentNote = myNotes[selectedNote];
     
     // sends note position as relative val between 0 and 1
-    sendMessage('move', selectedNote, (e.pageX / canvas.width).toPrecision(5), 
-                (e.pageY / canvas.height).toPrecision(5), chromatic);
+    /*sendMessage('move', selectedNote, (e.pageX / canvas.width).toPrecision(5), 
+                (e.pageY / canvas.height).toPrecision(5), chromatic);*/
     
     currentNote.setPosition(e.pageX, e.pageY);
     draw();
@@ -441,7 +445,7 @@ function mouseHandler(e) {
 function mouseOutHandler(e) {
     if (selectedNote < 0) return;
     deleteMyNote(selectedNote);
-    sendMessage('delete', selectedNote);
+    //sendMessage('delete', selectedNote);
     selectedNote = -1;
 }
 
@@ -477,8 +481,8 @@ function touchHandler(e) {
         for (var j = 0; j < numMyNotes; ++j) {
             if (myNotes[j].touchID == touches[i].identifier) {
                 var currentNote = myNotes[j];
-                sendMessage('move', j, (touches[i].pageX / canvas.width).toPrecision(5), 
-                            (touches[i].pageY / canvas.height).toPrecision(5), chromatic);
+                /*sendMessage('move', j, (touches[i].pageX / canvas.width).toPrecision(5), 
+                            (touches[i].pageY / canvas.height).toPrecision(5), chromatic);*/
                 currentNote.setPosition(touches[i].pageX, touches[i].pageY);
                 draw();
                 if (chromatic) {
@@ -491,7 +495,7 @@ function touchHandler(e) {
                 if (currentNote.y > canvas.height || currentNote.x < 0 || 
                    currentNote.y < 0 || currentNote.x > canvas.width) {
                     deleteMyNote(j);
-                    sendMessage('delete', j);
+                    //sendMessage('delete', j);
                 }
             }
         }
